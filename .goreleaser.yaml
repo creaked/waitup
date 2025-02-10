@@ -47,6 +47,7 @@ brews:
     repository:
       owner: creaked
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     commit_author:
       name: Will Chellman
       email: creaked@gmail.com
