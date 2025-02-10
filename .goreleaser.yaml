@@ -40,23 +40,6 @@ nfpms:
       - deb
       - rpm
 
-chocolateys:
-  - name: waitup
-    title: Waitup
-    authors: Will Chellman
-    project_url: https://github.com/creaked/waitup
-    license_url: https://github.com/creaked/waitup/blob/main/LICENSE
-    require_license_acceptance: false
-    project_source_url: https://github.com/creaked/waitup
-    docs_url: https://github.com/creaked/waitup
-    bug_tracker_url: https://github.com/creaked/waitup/issues
-    tags: "rdp ssh monitor utility cli"
-    summary: A tool to monitor system availability via RDP or SSH
-    description: |
-      Waitup is a command-line utility that monitors systems for RDP or SSH availability.
-      Perfect for checking when a system becomes available after reboot.
-    release_notes: "https://github.com/creaked/waitup/releases/tag/v{{ .Version }}"
-
 brews:
   - name: waitup
     homepage: "https://github.com/creaked/waitup"

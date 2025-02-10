@@ -9,11 +9,6 @@ A simple utility to check when a system becomes available via RDP or SSH. Perfec
 brew install creaked/tap/waitup
 ```
 
-### Using Chocolatey (Windows)
-```console
-choco install waitup
-```
-
 ### Manual Installation
 
 Download the latest release for your platform from the [releases page](https://github.com/creaked/waitup/releases/latest)
