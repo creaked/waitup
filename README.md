@@ -3,6 +3,22 @@
 A simple utility to check when a system becomes available via RDP or SSH. Perfect for monitoring system reboots or waiting for a server to come online.
 
 ## Install
+
+### Using Homebrew (macOS/Linux)
+```bash
+brew install creaked/tap/waitup
+```
+
+### Using Chocolatey (Windows)
+```console
+choco install waitup
+```
+
+### Manual Installation
+
+Download the latest release for your platform from the [releases page](https://github.com/creaked/waitup/releases/latest)
+
+### Build from Source
 ```console
 # Clone the repository
 git clone https://github.com/creaked/waitup.git

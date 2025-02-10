@@ -13,8 +13,9 @@ const helpText = `
 waitup - A tool to monitor system availability via RDP or SSH
 
 Usage:
-    waitup SYSTEM_NAME    Check if a system is available via RDP (3389) or SSH (22)
+    waitup HOSTNAME|IP    Check if a system is available via RDP (3389) or SSH (22)
     waitup -h, --help     Show this help message
+    waitup -v, --version  Show version information
 
 Examples:
     waitup server1.example.com    Monitor server1.example.com
@@ -24,7 +25,14 @@ The program will continuously check both ports until one becomes available.
 A dot will be displayed every 5 seconds while waiting.
 `
 
+var version = "dev" // this will be set by goreleaser
+
 func main() {
+	if len(os.Args) == 2 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
+		fmt.Printf("waitup version %s\n", version)
+		os.Exit(0)
+	}
+
 	if len(os.Args) != 2 {
 		printUsageAndExit()
 	}
@@ -42,8 +50,8 @@ func main() {
 	green := color.New(color.FgGreen, color.Bold).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 
-	fmt.Printf("\n🔍 %s %s\n", 
-		cyan("Waiting for RDP/SSH availability on"),
+	fmt.Printf(">> %s %s\n", 
+		cyan("Waiting for"),
 		green(host))
 	
 	attempts := 0
@@ -63,11 +71,11 @@ func main() {
 				}
 				
 				elapsed := time.Since(startTime).Round(time.Second)
-				fmt.Printf("\n✅ %s\n", green("Connection Established!"))
-				fmt.Printf("🖥️  %s: %s\n", cyan("System"), green(host))
-				fmt.Printf("🔌 %s: %s (%s)\n", cyan("Available on"), green(port), yellow(service))
-				fmt.Printf("⏱️  %s: %s\n", cyan("Time elapsed"), yellow(elapsed))
-				fmt.Printf("🔄 %s: %d\n\n", cyan("Total attempts"), attempts)
+				fmt.Printf("\n>> %s\n", green("Connection Established!"))
+				fmt.Printf(">> %s: %s\n", cyan("System"), green(host))
+				fmt.Printf(">> %s: %s (%s)\n", cyan("Available on"), green(port), yellow(service))
+				fmt.Printf(">> %s: %s\n", cyan("Time elapsed"), yellow(elapsed))
+				fmt.Printf(">> %s: %d\n", cyan("Total attempts"), attempts)
 				os.Exit(0)
 			}
 		}
@@ -79,7 +87,7 @@ func main() {
 }
 
 func printUsageAndExit() {
-	fmt.Println("Usage: waitup SYSTEM_NAME")
+	fmt.Println("Usage: waitup HOSTNAME|IP")
 	fmt.Println("Try 'waitup --help' for more information")
 	os.Exit(1)
 } 

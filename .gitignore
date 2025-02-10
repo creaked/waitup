@@ -19,4 +19,7 @@ waitup.exe
 
 # OS specific
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# GoReleaser
+dist/ 
