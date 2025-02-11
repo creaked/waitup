@@ -13,15 +13,18 @@ const helpText = `
 waitup - A tool to monitor system availability via RDP or SSH
 
 Usage:
-    waitup HOSTNAME|IP    Check if a system is available via RDP (3389) or SSH (22)
-    waitup -h, --help     Show this help message
-    waitup -v, --version  Show version information
+    waitup HOSTNAME|IP              Check if a system is available via RDP (3389) or SSH (22)
+    waitup HOSTNAME|IP -p PORT      Check if a system is available on a specific port
+    waitup -h, --help              Show this help message
+    waitup -v, --version           Show version information
 
 Examples:
-    waitup server1.example.com    Monitor server1.example.com
-    waitup 192.168.1.100         Monitor IP address 192.168.1.100
+    waitup server1.example.com     Monitor server1.example.com (RDP/SSH)
+    waitup 192.168.1.100          Monitor IP address 192.168.1.100 (RDP/SSH)
+    waitup server1 -p 8080        Monitor specific port 8080
+    waitup 10.0.0.1 -p 443       Monitor specific port 443
 
-The program will continuously check both ports until one becomes available.
+The program will continuously check the specified port(s) until one becomes available.
 A dot will be displayed every 5 seconds while waiting.
 `
 
@@ -33,26 +36,41 @@ func main() {
 		os.Exit(0)
 	}
 
-	if len(os.Args) != 2 {
-		printUsageAndExit()
-	}
-
-	if os.Args[1] == "-h" || os.Args[1] == "--help" {
+	if len(os.Args) == 2 && (os.Args[1] == "-h" || os.Args[1] == "--help") {
 		fmt.Print(helpText)
 		os.Exit(0)
 	}
 
+	if len(os.Args) < 2 || len(os.Args) > 4 {
+		printUsageAndExit()
+	}
+
 	host := os.Args[1]
-	ports := []string{"3389", "22"}
+	var ports []string
+
+	if len(os.Args) == 4 && os.Args[2] == "-p" {
+		ports = []string{os.Args[3]}
+	} else if len(os.Args) == 2 {
+		ports = []string{"3389", "22"}
+	} else {
+		printUsageAndExit()
+	}
+
 	interval := 5 * time.Second
 
 	cyan := color.New(color.FgCyan).SprintFunc()
 	green := color.New(color.FgGreen, color.Bold).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 
-	fmt.Printf(">> %s %s\n", 
+	portDesc := "RDP/SSH"
+	if len(ports) == 1 {
+		portDesc = fmt.Sprintf("port %s", ports[0])
+	}
+
+	fmt.Printf(">> %s %s (%s)", 
 		cyan("Waiting for"),
-		green(host))
+		green(host),
+		yellow(portDesc))
 	
 	attempts := 0
 	startTime := time.Now()
@@ -65,8 +83,10 @@ func main() {
 			
 			if err == nil {
 				conn.Close()
-				service := "RDP"
-				if port == "22" {
+				service := "Custom Port"
+				if port == "3389" {
+					service = "RDP"
+				} else if port == "22" {
 					service = "SSH"
 				}
 				
@@ -87,7 +107,7 @@ func main() {
 }
 
 func printUsageAndExit() {
-	fmt.Println("Usage: waitup HOSTNAME|IP")
+	fmt.Println("Usage: waitup HOSTNAME|IP [-p PORT]")
 	fmt.Println("Try 'waitup --help' for more information")
 	os.Exit(1)
 } 

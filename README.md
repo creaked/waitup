@@ -31,8 +31,16 @@ waitup hostname
 # Examples
 waitup server1.example.com
 waitup 192.168.1.100
+
+# Monitor specific port
+waitup server1 -p 8080
+waitup 10.0.0.1 -p 443
 ```
-The tool will continuously check ports 3389 (RDP) and 22 (SSH) until one becomes available. Progress is shown with dots, and you'll get a notification when the system is ready.
+The tool will continuously check the specified port(s) until one becomes available:
+- By default, checks RDP (3389) and SSH (22)
+- Use -p flag to monitor a specific port
+
+Progress is shown with dots, and you'll get a notification when the system is ready.
 
 ## License
 
