@@ -9,8 +9,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const helpText = `
-waitup - A tool to monitor system availability via RDP or SSH
+const helpText = `waitup - A tool to monitor system availability via RDP or SSH
 
 Usage:
     waitup HOSTNAME|IP              Check if a system is available via RDP (3389) or SSH (22)
