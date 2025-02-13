@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
+	"os/user"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -46,11 +50,16 @@ func main() {
 
 	host := os.Args[1]
 	var ports []string
+	var sshEnabled bool
 
 	if len(os.Args) == 4 && os.Args[2] == "-p" {
 		ports = []string{os.Args[3]}
+		if os.Args[3] == "22" && isSSHAvailable() {
+			sshEnabled = true
+		}
 	} else if len(os.Args) == 2 {
 		ports = []string{"3389", "22"}
+		sshEnabled = isSSHAvailable()
 	} else {
 		printUsageAndExit()
 	}
@@ -95,6 +104,12 @@ func main() {
 				fmt.Printf(">> %s: %s (%s)\n", cyan("Available on"), green(port), yellow(service))
 				fmt.Printf(">> %s: %s\n", cyan("Time elapsed"), yellow(elapsed))
 				fmt.Printf(">> %s: %d\n", cyan("Total attempts"), attempts)
+
+				if service == "SSH" && sshEnabled {
+					if promptYesNo("\nWould you like to connect via SSH? (y/N) ") {
+						connectSSH(host)
+					}
+				}
 				os.Exit(0)
 			}
 		}
@@ -105,8 +120,53 @@ func main() {
 	}
 }
 
+func promptYesNo(prompt string) bool {
+	fmt.Print(prompt)
+	reader := bufio.NewReader(os.Stdin)
+	response, _ := reader.ReadString('\n')
+	response = strings.ToLower(strings.TrimSpace(response))
+	return response == "y" || response == "yes"
+}
+
+func promptUsername(defaultUser string) string {
+	fmt.Printf("Enter username (press Enter for %s): ", defaultUser)
+	reader := bufio.NewReader(os.Stdin)
+	username, _ := reader.ReadString('\n')
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return defaultUser
+	}
+	return username
+}
+
+func connectSSH(host string) {
+	currentUser, err := user.Current()
+	if err != nil {
+		fmt.Printf("Error getting current user: %v\n", err)
+		return
+	}
+
+	username := promptUsername(currentUser.Username)
+	sshHost := fmt.Sprintf("%s@%s", username, host)
+
+	cmd := exec.Command("ssh", sshHost)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf("Error connecting: %v\n", err)
+	}
+}
+
 func printUsageAndExit() {
 	fmt.Println("Usage: waitup HOSTNAME|IP [-p PORT]")
 	fmt.Println("Try 'waitup --help' for more information")
 	os.Exit(1)
+}
+
+func isSSHAvailable() bool {
+	_, err := exec.LookPath("ssh")
+	return err == nil
 } 
