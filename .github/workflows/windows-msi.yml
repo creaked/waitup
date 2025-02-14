@@ -35,8 +35,12 @@ jobs:
       - name: Build MSI
         run: |
           $version = $env:GITHUB_REF -replace 'refs/tags/v', ''
-          $workdir = $pwd.Path
-          go-msi make --msi $workdir\waitup-$version-windows-amd64.msi --version $version --src $workdir
+          mkdir build
+          Copy-Item waitup.exe build\
+          cd build
+          go-msi make --msi waitup-$version-windows-amd64.msi --version $version
+          Move-Item waitup-$version-windows-amd64.msi ..
+          cd ..
           
       - name: Upload MSI
         uses: softprops/action-gh-release@v1
