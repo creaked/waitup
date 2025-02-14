@@ -49,8 +49,8 @@ jobs:
           Copy-Item LICENSE C:\build\
           cd C:\build
           
-          # Generate WXS file from wix.json
-          go-msi generate-wxs --src "C:\build" --version $version --out "waitup.wxs"
+          # Convert wix.json to WXS
+          go-msi to-wix --src "C:\build" --version $version --out "waitup.wxs"
           
           # Debug info
           Write-Host "Current directory: $pwd"
