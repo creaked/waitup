@@ -37,6 +37,10 @@ jobs:
           $version = $env:GITHUB_REF -replace 'refs/tags/v', ''
           $workdir = $pwd.Path
           
+          # Show go-msi help
+          Write-Host "Available go-msi commands:"
+          go-msi --help
+          
           # Create and set temp directory
           mkdir C:\msi-temp
           $env:TMP = "C:\msi-temp"
@@ -49,17 +53,14 @@ jobs:
           Copy-Item LICENSE C:\build\
           cd C:\build
           
-          # Convert wix.json to WXS
-          go-msi to-wix --src "C:\build" --version $version --out "waitup.wxs"
-          
           # Debug info
           Write-Host "Current directory: $pwd"
           Write-Host "Files in current directory:"
           Get-ChildItem
           Write-Host "Temp directory: $env:TEMP"
           
-          # Use simple paths with generated WXS
-          go-msi make --msi "waitup-$version-windows-amd64.msi" --version $version --src "C:\build"
+          # Try make with additional flags
+          go-msi make --msi "waitup-$version-windows-amd64.msi" --version $version --src "C:\build" --arch amd64
           
           if (Test-Path "waitup-$version-windows-amd64.msi") {
               Copy-Item "waitup-$version-windows-amd64.msi" $workdir
