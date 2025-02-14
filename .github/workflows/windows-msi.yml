@@ -49,13 +49,16 @@ jobs:
           Copy-Item LICENSE C:\build\
           cd C:\build
           
+          # Generate WXS file from wix.json
+          go-msi generate-wxs --src "C:\build" --version $version --out "waitup.wxs"
+          
           # Debug info
           Write-Host "Current directory: $pwd"
           Write-Host "Files in current directory:"
           Get-ChildItem
           Write-Host "Temp directory: $env:TEMP"
           
-          # Use simple paths
+          # Use simple paths with generated WXS
           go-msi make --msi "waitup-$version-windows-amd64.msi" --version $version --src "C:\build"
           
           if (Test-Path "waitup-$version-windows-amd64.msi") {
