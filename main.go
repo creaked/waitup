@@ -9,21 +9,22 @@ import (
 	"os/user"
 	"strings"
 	"time"
+	"runtime"
 
 	"github.com/fatih/color"
 )
 
-const helpText = `waitup - A tool to monitor system availability via RDP or SSH
+const helpText = `waitup - A tool to monitor system availability via SSH or RDP
 
 Usage:
-    waitup HOSTNAME|IP              Check if a system is available via RDP (3389) or SSH (22)
+    waitup HOSTNAME|IP              Check if a system is available via SSH (22) or RDP (3389)
     waitup HOSTNAME|IP -p PORT      Check if a system is available on a specific port
     waitup -h, --help              Show this help message
     waitup -v, --version           Show version information
 
 Examples:
-    waitup server1.example.com     Monitor server1.example.com (RDP/SSH)
-    waitup 192.168.1.100          Monitor IP address 192.168.1.100 (RDP/SSH)
+    waitup server1.example.com     Monitor server1.example.com (SSH/RDP)
+    waitup 192.168.1.100          Monitor IP address 192.168.1.100 (SSH/RDP)
     waitup server1 -p 8080        Monitor specific port 8080
     waitup 10.0.0.1 -p 443       Monitor specific port 443
 
@@ -50,16 +51,20 @@ func main() {
 
 	host := os.Args[1]
 	var ports []string
-	var sshEnabled bool
+	var sshEnabled, rdpEnabled bool
 
 	if len(os.Args) == 4 && os.Args[2] == "-p" {
 		ports = []string{os.Args[3]}
 		if os.Args[3] == "22" && isSSHAvailable() {
 			sshEnabled = true
 		}
+		if os.Args[3] == "3389" && isRDPAvailable() {
+			rdpEnabled = true
+		}
 	} else if len(os.Args) == 2 {
 		ports = []string{"3389", "22"}
 		sshEnabled = isSSHAvailable()
+		rdpEnabled = isRDPAvailable()
 	} else {
 		printUsageAndExit()
 	}
@@ -70,7 +75,7 @@ func main() {
 	green := color.New(color.FgGreen, color.Bold).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 
-	portDesc := "RDP/SSH"
+	portDesc := "SSH/RDP"
 	if len(ports) == 1 {
 		portDesc = fmt.Sprintf("port %s", ports[0])
 	}
@@ -109,6 +114,10 @@ func main() {
 					if promptYesNo("\nWould you like to connect via SSH? (y/N) ") {
 						connectSSH(host)
 					}
+				} else if service == "RDP" && rdpEnabled {
+					if promptYesNo("\nWould you like to connect via RDP? (y/N) ") {
+						connectRDP(host)
+					}
 				}
 				os.Exit(0)
 			}
@@ -139,6 +148,17 @@ func promptUsername(defaultUser string) string {
 	return username
 }
 
+func printUsageAndExit() {
+	fmt.Println("Usage: waitup HOSTNAME|IP [-p PORT]")
+	fmt.Println("Try 'waitup --help' for more information")
+	os.Exit(1)
+}
+
+func isSSHAvailable() bool {
+	_, err := exec.LookPath("ssh")
+	return err == nil
+}
+
 func connectSSH(host string) {
 	currentUser, err := user.Current()
 	if err != nil {
@@ -160,13 +180,63 @@ func connectSSH(host string) {
 	}
 }
 
-func printUsageAndExit() {
-	fmt.Println("Usage: waitup HOSTNAME|IP [-p PORT]")
-	fmt.Println("Try 'waitup --help' for more information")
-	os.Exit(1)
+func isRDPAvailable() bool {
+	switch runtime.GOOS {
+	case "windows":
+		_, err := exec.LookPath("mstsc")
+		return err == nil
+	case "darwin":
+		_, err := os.Stat("/Applications/Microsoft Remote Desktop.app")
+		return err == nil
+	default:
+		clients := []string{"xfreerdp", "rdesktop"}
+		for _, client := range clients {
+			if _, err := exec.LookPath(client); err == nil {
+				return true
+			}
+		}
+		return false
+	}
 }
 
-func isSSHAvailable() bool {
-	_, err := exec.LookPath("ssh")
-	return err == nil
+func connectRDP(host string) {
+	switch runtime.GOOS {
+	case "darwin":
+		rdpContent := fmt.Sprintf(`full address:s:%s`, host)
+		
+		// create a temp rdp file as a work around for macOS
+		tmpFile, err := os.CreateTemp("", "waitup-*.rdp")
+		if err != nil {
+			fmt.Printf("Error creating RDP file: %v\n", err)
+			return
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.WriteString(rdpContent); err != nil {
+			fmt.Printf("Error writing RDP file: %v\n", err)
+			return
+		}
+		tmpFile.Close()
+
+		cmd := exec.Command("open", tmpFile.Name())
+		err = cmd.Start()
+		if err != nil {
+			fmt.Printf("Error launching RDP: %v\n", err)
+		}
+		time.Sleep(time.Second)
+	default:
+		if _, err := exec.LookPath("xfreerdp"); err == nil {
+			cmd := exec.Command("xfreerdp", "/v:"+host)
+			err = cmd.Start()
+			if err != nil {
+				fmt.Printf("Error launching RDP: %v\n", err)
+			}
+		} else if _, err := exec.LookPath("rdesktop"); err == nil {
+			cmd := exec.Command("rdesktop", host)
+			err = cmd.Start()
+			if err != nil {
+				fmt.Printf("Error launching RDP: %v\n", err)
+			}
+		}
+	}
 } 
