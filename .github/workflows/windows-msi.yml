@@ -36,28 +36,35 @@ jobs:
         run: |
           $version = $env:GITHUB_REF -replace 'refs/tags/v', ''
           $workdir = $pwd.Path
-          mkdir build
-          Copy-Item waitup.exe build\
-          Copy-Item wix.json build\
-          Copy-Item LICENSE build\
-          cd build
+          
+          # Create and set temp directory
+          mkdir C:\msi-temp
+          $env:TMP = "C:\msi-temp"
+          $env:TEMP = "C:\msi-temp"
+          
+          # Create build directory
+          mkdir C:\build
+          Copy-Item waitup.exe C:\build\
+          Copy-Item wix.json C:\build\
+          Copy-Item LICENSE C:\build\
+          cd C:\build
           
           # Debug info
           Write-Host "Current directory: $pwd"
           Write-Host "Files in current directory:"
           Get-ChildItem
+          Write-Host "Temp directory: $env:TEMP"
           
-          # Use absolute paths
-          $msiPath = Join-Path $workdir "build\waitup-$version-windows-amd64.msi"
-          go-msi make --msi "$msiPath" --version $version --src $pwd
+          # Use simple paths
+          go-msi make --msi "waitup-$version-windows-amd64.msi" --version $version --src "C:\build"
           
-          if (Test-Path $msiPath) {
-              Move-Item $msiPath ..
+          if (Test-Path "waitup-$version-windows-amd64.msi") {
+              Copy-Item "waitup-$version-windows-amd64.msi" $workdir
           } else {
               Write-Error "MSI file was not created"
               exit 1
           }
-          cd ..
+          cd $workdir
           
       - name: Upload MSI
         uses: softprops/action-gh-release@v1
