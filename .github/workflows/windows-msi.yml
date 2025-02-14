@@ -17,6 +17,11 @@ jobs:
         with:
           go-version: '1.21'
           
+      - name: Build Binary
+        run: |
+          $version = $env:GITHUB_REF -replace 'refs/tags/v', ''
+          go build -ldflags "-X main.version=$version"
+          
       - name: Install WiX Toolset
         run: |
           curl -L -o wix.zip https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
