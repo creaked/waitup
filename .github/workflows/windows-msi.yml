@@ -37,10 +37,6 @@ jobs:
           $version = $env:GITHUB_REF -replace 'refs/tags/v', ''
           $workdir = $pwd.Path
           
-          # Show go-msi help
-          Write-Host "Available go-msi commands:"
-          go-msi --help
-          
           # Create and set temp directory
           mkdir C:\msi-temp
           $env:TMP = "C:\msi-temp"
@@ -53,14 +49,19 @@ jobs:
           Copy-Item LICENSE C:\build\
           cd C:\build
           
+          # Generate templates
+          go-msi generate-templates --path templates --src "C:\build"
+          
           # Debug info
           Write-Host "Current directory: $pwd"
           Write-Host "Files in current directory:"
           Get-ChildItem
+          Write-Host "Template directory:"
+          Get-ChildItem templates
           Write-Host "Temp directory: $env:TEMP"
           
-          # Try make with additional flags
-          go-msi make --msi "waitup-$version-windows-amd64.msi" --version $version --src "C:\build" --arch amd64
+          # Make MSI with templates
+          go-msi make --msi "waitup-$version-windows-amd64.msi" --version $version --src "C:\build" --path templates
           
           if (Test-Path "waitup-$version-windows-amd64.msi") {
               Copy-Item "waitup-$version-windows-amd64.msi" $workdir
