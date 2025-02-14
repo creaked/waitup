@@ -1,0 +1,42 @@
+name: Windows MSI
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  msi:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          
+      - name: Install WiX Toolset
+        run: |
+          curl -L -o wix.zip https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
+          Expand-Archive wix.zip -DestinationPath wix
+          echo "$pwd\wix" | Out-File -FilePath $env:GITHUB_PATH -Append
+          
+      - name: Install go-msi
+        run: |
+          go install github.com/mh-cbon/go-msi@latest
+          
+      - name: Build MSI
+        run: |
+          $version = $env:GITHUB_REF -replace 'refs/tags/v', ''
+          go-msi make --msi waitup-$version-windows-amd64.msi --version $version
+          
+      - name: Upload MSI
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./waitup-${{ github.ref_name }}-windows-amd64.msi
+          asset_name: waitup-${{ github.ref_name }}-windows-amd64.msi
+          asset_content_type: application/x-msi 

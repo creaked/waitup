@@ -1,0 +1,27 @@
+{
+  "product": "waitup",
+  "company": "Will Chellman",
+  "license": "LICENSE",
+  "upgrade-code": "4552d2d3-259e-4fc6-9f57-a83f68f0b80e",
+  "files": {
+    "guid": "4552d2d3-259e-4fc6-9f57-a83f68f0b80f",
+    "items": [
+      "waitup.exe"
+    ]
+  },
+  "env": {
+    "guid": "4552d2d3-259e-4fc6-9f57-a83f68f0b80d",
+    "vars": [
+      {
+        "name": "PATH",
+        "value": "[INSTALLDIR]",
+        "permanent": "yes",
+        "system": "yes",
+        "action": "set",
+        "part": "last"
+      }
+    ]
+  },
+  "shortcuts": {},
+  "choco": {}
+} 
