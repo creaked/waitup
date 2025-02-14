@@ -1,8 +1,9 @@
 name: Windows MSI
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   msi:
@@ -32,11 +33,8 @@ jobs:
           go-msi make --msi waitup-$version-windows-amd64.msi --version $version
           
       - name: Upload MSI
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./waitup-${{ github.ref_name }}-windows-amd64.msi
-          asset_name: waitup-${{ github.ref_name }}-windows-amd64.msi
-          asset_content_type: application/x-msi 
+          files: waitup-*-windows-amd64.msi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
