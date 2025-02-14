@@ -21,12 +21,10 @@ archives:
   - format: tar.gz
     name_template: >-
       {{ .ProjectName }}_
-      {{- title .Os }}_
+      {{- if eq .Os "darwin" }}macOS
+      {{- else }}{{ title .Os }}{{ end }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else }}{{ .Arch }}{{ end }}
-    format_overrides:
-      - goos: windows
-        format: zip
     files:
       - README.md
       - LICENSE
@@ -52,5 +50,21 @@ brews:
       name: Will Chellman
       email: creaked@gmail.com
 
+msi:
+  - name: waitup
+    short_description: "System availability monitor"
+    long_description: "A tool to monitor system availability via RDP or SSH"
+    product_name: Waitup
+    publisher: Will Chellman
+    homepage: "https://github.com/creaked/waitup"
+    license: MIT
+    env:
+      - CGO_ENABLED=0
+    wix:
+      upgrade_code: "4552d2d3-259e-4fc6-9f57-a83f68f0b80e"
+      product_code: "4552d2d3-259e-4fc6-9f57-a83f68f0b80f"
+      add_to_path: true
+      license: LICENSE
+
 checksum:
-  name_template: 'checksums.txt' 
+  name_template: "checksums.txt"
