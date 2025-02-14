@@ -37,6 +37,8 @@ jobs:
           $version = $env:GITHUB_REF -replace 'refs/tags/v', ''
           mkdir build
           Copy-Item waitup.exe build\
+          Copy-Item wix.json build\
+          Copy-Item LICENSE build\
           cd build
           go-msi make --msi waitup-$version-windows-amd64.msi --version $version
           Move-Item waitup-$version-windows-amd64.msi ..
