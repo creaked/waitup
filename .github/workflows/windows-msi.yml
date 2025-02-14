@@ -49,7 +49,8 @@ jobs:
           Copy-Item LICENSE C:\build\
           cd C:\build
           
-          # Generate templates
+          # Create templates directory and generate templates
+          mkdir templates
           go-msi generate-templates --path templates --src "C:\build"
           
           # Debug info
