@@ -1,4 +1,7 @@
 # waitup
+[![GitHub release](https://img.shields.io/github/v/release/creaked/waitup)](https://github.com/creaked/waitup/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/creaked/waitup)](https://goreportcard.com/report/github.com/creaked/waitup)
+[![License](https://img.shields.io/github/license/creaked/waitup)](LICENSE)
 
 A utility to check when a system becomes available via SSH or RDP. Perfect for monitoring system reboots or waiting for a server to come online.
 
