@@ -53,12 +53,13 @@ brews:
       email: creaked@gmail.com
 
 aurs:
-  - homepage:  https://github.com/creaked/waitup
+  - name: waitup-bin
+    homepage: https://github.com/creaked/waitup
     description: A utility to check when a system/service becomes available (RDP/SSH/Port)
     maintainers:
       - 'Will Chellman <creaked at gmail dot com>'
       - 'Jonathan Neidel <aur at jneidel dot com>'
-    license: 'MIT'
+    license: MIT
     private_key: '{{ .Env.AUR_KEY }}'
     git_url: 'ssh://aur@aur.archlinux.org/waitup-bin.git'
     package: |-
