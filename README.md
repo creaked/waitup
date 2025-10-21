@@ -2,6 +2,8 @@
 
 A utility to check when a system becomes available via SSH or RDP. Perfect for monitoring system reboots or waiting for a server to come online.
 
+![Demo of waitup in action](media/demo.gif)
+
 ## Features
 - Monitors systems for SSH (22) or RDP (3389) availability
 - Supports custom port monitoring
