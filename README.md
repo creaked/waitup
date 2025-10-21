@@ -17,9 +17,14 @@ A utility to check when a system becomes available via SSH or RDP. Perfect for m
 
 ## Install
 
-### Using Homebrew (macOS/Linux)
+### Using Homebrew
 ```bash
 brew install creaked/tap/waitup
+```
+
+### AUR
+```bash
+yay -S waitup-bin
 ```
 
 ### Manual Installation

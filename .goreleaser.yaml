@@ -52,5 +52,20 @@ brews:
       name: Will Chellman
       email: creaked@gmail.com
 
+aurs:
+  - homepage:  https://github.com/creaked/waitup
+    description: A utility to check when a system/service becomes available (RDP/SSH/Port)
+    maintainers:
+      - 'Will Chellman <creaked at gmail dot com>'
+      - 'Jonathan Neidel <aur at jneidel dot com>'
+    license: 'MIT'
+    private_key: '{{ .Env.AUR_KEY }}'
+    git_url: 'ssh://aur@aur.archlinux.org/waitup-bin.git'
+    package: |-
+      # bin
+      install -Dm755 "./waitup" "${pkgdir}/usr/bin/waitup"
+      # license
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+
 checksum:
   name_template: 'checksums.txt' 
