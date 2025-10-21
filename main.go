@@ -37,6 +37,7 @@ var version = "dev" // this will be set by goreleaser
 func main() {
 	if len(os.Args) == 2 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
 		fmt.Printf("waitup version %s\n", version)
+		fmt.Println("https://github.com/creaked/waitup")
 		os.Exit(0)
 	}
 
