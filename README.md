@@ -62,7 +62,7 @@ waitup -p 443 10.0.0.1
 ### Automation & Scripting
 Perfect for CI/CD pipelines and automation scripts:
 
-```console
+```bash
 # Quiet mode - suppresses output, only returns exit code
 waitup -q server1.example.com
 waitup --quiet 192.168.1.100
