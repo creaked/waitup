@@ -126,20 +126,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Validate timeout BEFORE checking for hostname
-	// This ensures flag validation errors are reported first
 	var timeoutDuration time.Duration
 	if timeoutFlag != "" {
 		timeoutStr := timeoutFlag
-		// First, try to parse as a duration (e.g., "30s", "5m")
 		if _, err := time.ParseDuration(timeoutFlag); err != nil {
-			// If that fails, check if it's a plain number (e.g., "30")
-			// Use strconv.ParseFloat to ensure the ENTIRE string is a valid number
 			if _, numErr := strconv.ParseFloat(timeoutFlag, 64); numErr == nil {
 				timeoutStr = timeoutFlag + "s"
 			}
-			// If it's neither a valid duration nor a valid number, timeoutStr remains unchanged
-			// and will fail in the next ParseDuration call
 		}
 
 		duration, err := time.ParseDuration(timeoutStr)
@@ -249,15 +242,84 @@ func runMonitoring(config Config) {
 	}
 }
 
+type SSHConfig struct {
+	Hostname string
+	Username string
+	Port     string
+}
+
+func resolveSSHConfig(hostname string) SSHConfig {
+	cmd := exec.Command("ssh", "-G", hostname)
+	output, err := cmd.Output()
+	if err != nil {
+		return SSHConfig{Hostname: hostname}
+	}
+
+	config := SSHConfig{Hostname: hostname}
+	lines := strings.Split(string(output), "\n")
+	hasExplicitUser := false
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "hostname ") {
+			resolvedHostname := strings.TrimSpace(line[8:])
+			if resolvedHostname != hostname {
+				config.Hostname = resolvedHostname
+			}
+		} else if strings.HasPrefix(line, "user ") {
+			config.Username = strings.TrimSpace(line[4:])
+			hasExplicitUser = hasSSHConfigEntry(hostname)
+		} else if strings.HasPrefix(line, "port ") {
+			config.Port = strings.TrimSpace(line[4:])
+		}
+	}
+
+	if !hasExplicitUser {
+		config.Username = ""
+	}
+
+	return config
+}
+
+func hasSSHConfigEntry(hostname string) bool {
+	configPath := os.Getenv("HOME") + "/.ssh/config"
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return false
+	}
+
+	lines := strings.Split(string(content), "\n")
+	inHostBlock := false
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "Host ") {
+			hostPattern := strings.TrimSpace(line[5:])
+			if hostPattern == hostname || hostPattern == "*" {
+				inHostBlock = true
+			} else {
+				inHostBlock = false
+			}
+		} else if inHostBlock && (strings.HasPrefix(line, "Host ") || line == "") {
+			inHostBlock = false
+		} else if inHostBlock && strings.HasPrefix(line, "User ") {
+			return true
+		}
+	}
+
+	return false
+}
+
 func checkConnection(config Config, attempts *int, startTime time.Time, cyan, green, yellow func(...interface{}) string) bool {
 	*attempts++
 	for _, port := range config.ports {
-		address := net.JoinHostPort(config.host, port)
+		sshConfig := resolveSSHConfig(config.host)
+		address := net.JoinHostPort(sshConfig.Hostname, port)
 		conn, err := net.DialTimeout("tcp", address, 3*time.Second)
 
 		if err == nil {
 			conn.Close()
-			service := "Custom Port"
+			service := "TCP"
 			if port == "3389" {
 				service = "RDP"
 			} else if port == "22" {
@@ -275,11 +337,11 @@ func checkConnection(config Config, attempts *int, startTime time.Time, cyan, gr
 
 				if service == "SSH" && config.sshEnabled {
 					if promptYesNo("\nWould you like to connect via SSH? (y/N) ") {
-						connectSSH(config.host)
+						connectSSH(sshConfig)
 					}
 				} else if service == "RDP" && config.rdpEnabled {
 					if promptYesNo("\nWould you like to connect via RDP? (y/N) ") {
-						connectRDP(config.host)
+						connectRDP(sshConfig.Hostname)
 					}
 				}
 			}
@@ -318,22 +380,27 @@ func isSSHAvailable() bool {
 	return err == nil
 }
 
-func connectSSH(host string) {
-	currentUser, err := user.Current()
-	if err != nil {
-		fmt.Printf("Error getting current user: %v\n", err)
-		return
+func connectSSH(sshConfig SSHConfig) {
+	var username string
+	if sshConfig.Username != "" {
+		username = sshConfig.Username
+	} else {
+		currentUser, err := user.Current()
+		if err != nil {
+			fmt.Printf("Error getting current user: %v\n", err)
+			return
+		}
+		username = promptUsername(currentUser.Username)
 	}
 
-	username := promptUsername(currentUser.Username)
-	sshHost := fmt.Sprintf("%s@%s", username, host)
+	sshHost := fmt.Sprintf("%s@%s", username, sshConfig.Hostname)
 
 	cmd := exec.Command("ssh", sshHost)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		fmt.Printf("Error connecting: %v\n", err)
 	}
