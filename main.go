@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/user"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,7 +48,6 @@ var version = "dev" // this will be set by goreleaser
 
 type Config struct {
 	host       string
-	port       string
 	quiet      bool
 	timeout    time.Duration
 	ports      []string
@@ -126,25 +126,20 @@ func main() {
 		os.Exit(0)
 	}
 
-	if hostname == "" {
-		fmt.Fprintln(os.Stderr, "Error: hostname or IP address required")
-		fmt.Fprintln(os.Stderr, "Try 'waitup --help' for more information")
-		os.Exit(1)
-	}
-
-	config := Config{
-		host:  hostname,
-		quiet: quietFlag,
-	}
-
+	// Validate timeout BEFORE checking for hostname
+	// This ensures flag validation errors are reported first
+	var timeoutDuration time.Duration
 	if timeoutFlag != "" {
 		timeoutStr := timeoutFlag
+		// First, try to parse as a duration (e.g., "30s", "5m")
 		if _, err := time.ParseDuration(timeoutFlag); err != nil {
-			if num := timeoutFlag; len(num) > 0 {
-				if _, numErr := fmt.Sscanf(num, "%f", new(float64)); numErr == nil {
-					timeoutStr = timeoutFlag + "s"
-				}
+			// If that fails, check if it's a plain number (e.g., "30")
+			// Use strconv.ParseFloat to ensure the ENTIRE string is a valid number
+			if _, numErr := strconv.ParseFloat(timeoutFlag, 64); numErr == nil {
+				timeoutStr = timeoutFlag + "s"
 			}
+			// If it's neither a valid duration nor a valid number, timeoutStr remains unchanged
+			// and will fail in the next ParseDuration call
 		}
 
 		duration, err := time.ParseDuration(timeoutStr)
@@ -157,7 +152,32 @@ func main() {
 			fmt.Fprintln(os.Stderr, "Error: timeout must be positive")
 			os.Exit(1)
 		}
-		config.timeout = duration
+		timeoutDuration = duration
+	}
+
+	// Validate port number if provided
+	if portFlag != "" {
+		portNum, err := strconv.Atoi(portFlag)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: invalid port '%s': must be a number\n", portFlag)
+			os.Exit(1)
+		}
+		if portNum < 1 || portNum > 65535 {
+			fmt.Fprintf(os.Stderr, "Error: invalid port '%s': must be between 1 and 65535\n", portFlag)
+			os.Exit(1)
+		}
+	}
+
+	if hostname == "" {
+		fmt.Fprintln(os.Stderr, "Error: hostname or IP address required")
+		fmt.Fprintln(os.Stderr, "Try 'waitup --help' for more information")
+		os.Exit(1)
+	}
+
+	config := Config{
+		host:    hostname,
+		quiet:   quietFlag,
+		timeout: timeoutDuration,
 	}
 
 	if portFlag != "" {
@@ -363,7 +383,14 @@ func connectRDP(host string) {
 			fmt.Printf("Error launching RDP: %v\n", err)
 		}
 		time.Sleep(time.Second)
+	case "windows":
+		cmd := exec.Command("mstsc", "/v:"+host)
+		err := cmd.Start()
+		if err != nil {
+			fmt.Printf("Error launching RDP: %v\n", err)
+		}
 	default:
+		// Linux/Unix systems
 		if _, err := exec.LookPath("xfreerdp"); err == nil {
 			cmd := exec.Command("xfreerdp", "/v:"+host)
 			err = cmd.Start()
@@ -376,6 +403,8 @@ func connectRDP(host string) {
 			if err != nil {
 				fmt.Printf("Error launching RDP: %v\n", err)
 			}
+		} else {
+			fmt.Println("Error: No RDP client found. Please install xfreerdp or rdesktop.")
 		}
 	}
 }
