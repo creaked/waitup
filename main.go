@@ -148,7 +148,6 @@ func main() {
 		timeoutDuration = duration
 	}
 
-	// Validate port number if provided
 	if portFlag != "" {
 		portNum, err := strconv.Atoi(portFlag)
 		if err != nil {
@@ -243,19 +242,20 @@ func runMonitoring(config Config) {
 }
 
 type SSHConfig struct {
-	Hostname string
-	Username string
-	Port     string
+	OriginalHost string
+	Hostname     string
+	Username     string
+	Port         string
 }
 
 func resolveSSHConfig(hostname string) SSHConfig {
 	cmd := exec.Command("ssh", "-G", hostname)
 	output, err := cmd.Output()
 	if err != nil {
-		return SSHConfig{Hostname: hostname}
+		return SSHConfig{OriginalHost: hostname, Hostname: hostname}
 	}
 
-	config := SSHConfig{Hostname: hostname}
+	config := SSHConfig{OriginalHost: hostname, Hostname: hostname}
 	lines := strings.Split(string(output), "\n")
 	hasExplicitUser := false
 
@@ -312,8 +312,9 @@ func hasSSHConfigEntry(hostname string) bool {
 
 func checkConnection(config Config, attempts *int, startTime time.Time, cyan, green, yellow func(...interface{}) string) bool {
 	*attempts++
+	sshConfig := resolveSSHConfig(config.host)
+
 	for _, port := range config.ports {
-		sshConfig := resolveSSHConfig(config.host)
 		address := net.JoinHostPort(sshConfig.Hostname, port)
 		conn, err := net.DialTimeout("tcp", address, 3*time.Second)
 
@@ -381,28 +382,34 @@ func isSSHAvailable() bool {
 }
 
 func connectSSH(sshConfig SSHConfig) {
-	var username string
 	if sshConfig.Username != "" {
-		username = sshConfig.Username
+		cmd := exec.Command("ssh", sshConfig.OriginalHost)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		err := cmd.Run()
+		if err != nil {
+			fmt.Printf("Error connecting: %v\n", err)
+		}
 	} else {
 		currentUser, err := user.Current()
 		if err != nil {
 			fmt.Printf("Error getting current user: %v\n", err)
 			return
 		}
-		username = promptUsername(currentUser.Username)
-	}
+		username := promptUsername(currentUser.Username)
+		sshHost := fmt.Sprintf("%s@%s", username, sshConfig.Hostname)
 
-	sshHost := fmt.Sprintf("%s@%s", username, sshConfig.Hostname)
+		cmd := exec.Command("ssh", sshHost)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 
-	cmd := exec.Command("ssh", sshHost)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-	if err != nil {
-		fmt.Printf("Error connecting: %v\n", err)
+		err = cmd.Run()
+		if err != nil {
+			fmt.Printf("Error connecting: %v\n", err)
+		}
 	}
 }
 
